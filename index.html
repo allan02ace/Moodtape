@@ -30,7 +30,6 @@ header span{color:var(--primary)}
 main{padding:40px 0 30px}
 @keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 .fu{opacity:0;animation:up .6s ease-out forwards}
-.eyebrow{font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.25em;color:var(--primary);margin:0}
 h1{font-size:clamp(2.8rem,9vw,4.5rem);font-weight:800;line-height:.95;letter-spacing:-.03em;margin:12px 0 0;text-wrap:balance}
 h1 em{font-family:"Instrument Serif",ui-serif,Georgia,serif;font-weight:400;font-style:italic;color:var(--primary)}
 .lead{max-width:36rem;font-size:1.15rem;color:var(--muted-fg);margin:20px 0 0}
@@ -54,7 +53,6 @@ textarea:focus{outline:2px solid var(--primary);outline-offset:1px}
 .ghost:disabled{opacity:.6;cursor:wait}
 #out{margin-top:40px}
 .hero{background:linear-gradient(135deg,var(--primary),oklch(0.55 0.2 300));color:#fff;border-radius:calc(var(--radius)*1.75);padding:28px;display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap}
-.hero small{text-transform:uppercase;letter-spacing:.2em;font-weight:600;opacity:.85}
 .hero h2{margin:6px 0 0;font-size:clamp(1.6rem,5vw,2.4rem);line-height:1.05;letter-spacing:-.02em}
 .hero .ghost{color:#fff;border-color:rgb(255 255 255 / .5)}
 .tag{font-size:.7rem;background:rgb(255 255 255 / .22);padding:2px 9px;border-radius:999px;margin-left:8px;vertical-align:middle;letter-spacing:.05em}
@@ -69,7 +67,6 @@ li a:hover{text-decoration:underline}
 .sk{background:var(--muted);border-radius:var(--radius);margin-bottom:12px;animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.5}}
 .err{color:var(--err);font-weight:600;margin-top:16px}
-footer{padding:30px 0 40px;color:var(--muted-fg);font-size:.85rem}
 </style>
 </head>
 <body>
@@ -77,11 +74,10 @@ footer{padding:30px 0 40px;color:var(--muted-fg);font-size:.85rem}
 <div class="wrap">
 <header>Mood<span>tape</span></header>
 <main>
-<p class="eyebrow fu">A mixtape for every moment</p>
 <h1 class="fu" style="animation-delay:.1s">Tell us the vibe. <em>We’ll press play.</em></h1>
-<p class="lead fu" style="animation-delay:.2s">Describe a mood, a memory, or a moment. Get 15 hand-picked songs you can play straight away on Spotify.</p>
+<p class="lead fu" style="animation-delay:.2s">Describe a mood. Get a playlist.</p>
 <div class="box fu" style="animation-delay:.3s">
-<textarea id="mood" placeholder="e.g. rainy Sunday, missing home, gym hype…"></textarea>
+<textarea id="mood" placeholder="Describe a mood…"></textarea>
 <div class="chips" id="chips"></div>
 <div class="row">
 <label class="sw"><input type="checkbox" id="opm"><span class="track"></span>OPM only 🇵🇭</label>
@@ -91,7 +87,6 @@ footer{padding:30px 0 40px;color:var(--muted-fg);font-size:.85rem}
 <div id="msg"></div>
 <div id="out"></div>
 </main>
-<footer>Songs are AI suggestions. Check each one on Spotify.</footer>
 </div>
 <script>
 (function(){
@@ -117,7 +112,7 @@ go.disabled=true;var rb=$("remix");if(rb)rb.disabled=true;
 skeleton();
 try{
 var res=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt(m,o)})});
-if(!res.ok){throw new Error("Couldn’t reach the AI. Try again in a moment.")}
+if(!res.ok){var er={};try{er=await res.json()}catch(x){}throw new Error("Couldn’t reach the AI. "+(er.error||"")+(er.detail?" – "+er.detail:""))}
 var data=parse((await res.json()).text);
 last={mood:m,opmOnly:o};
 render(data,o,m);
@@ -125,8 +120,7 @@ render(data,o,m);
 go.disabled=false;
 }
 function render(d,o,m){
-out.innerHTML='<div class="hero"><div><small></small><h2></h2></div><div class="acts"><button class="ghost" id="copy">Copy track list</button><button class="ghost" id="remix">Remix</button></div></div><ol></ol>';
-out.querySelector("small").textContent=m;
+out.innerHTML='<div class="hero"><div><h2></h2></div><div class="acts"><button class="ghost" id="copy">Copy track list</button><button class="ghost" id="remix">Remix</button></div></div><ol></ol>';
 var h2=out.querySelector("h2");h2.appendChild(document.createTextNode(d.title||"Your playlist"));
 if(o){var tg=document.createElement("span");tg.className="tag";tg.textContent="OPM";h2.appendChild(tg)}
 var ol=out.querySelector("ol");
