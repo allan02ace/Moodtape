@@ -62,6 +62,16 @@ textarea:focus{outline:2px solid var(--primary);outline-offset:1px}
 .go:disabled{opacity:.6;cursor:wait}
 .ghost{background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 16px;font:inherit;font-weight:600;cursor:pointer}
 .ghost:disabled{opacity:.6;cursor:wait}
+.opts{display:flex;flex-wrap:wrap;gap:10px 16px;margin:0 0 16px}
+.seg{display:inline-flex;background:var(--muted);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--muted-fg);font:inherit;font-size:.85rem;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer}
+.seg button.on{background:var(--primary);color:var(--primary-fg)}
+.seg button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.hist[hidden]{display:none}
+.hist{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:16px}
+.hist .chip{max-width:15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist .clr{background:none;border:0;color:var(--muted-fg);font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;padding:7px 6px}
+.hist .clr:hover{color:var(--fg)}
 #out{margin-top:40px}
 .hero{background:linear-gradient(135deg,var(--primary),oklch(0.55 0.2 300));color:#fff;border-radius:calc(var(--radius)*1.75);padding:28px;display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap}
 .hero h2{margin:6px 0 0;font-size:clamp(1.6rem,5vw,2.4rem);line-height:1.05;letter-spacing:-.02em}
@@ -88,6 +98,7 @@ h1{font-size:clamp(2.4rem,13vw,3.2rem)}
 .box{padding:14px;margin-top:22px}
 .chip{padding:9px 14px}
 .row{flex-direction:column;align-items:stretch;gap:14px}
+.opts{flex-direction:column;gap:10px}.seg{display:flex}.seg button{flex:1;padding:9px 6px}
 .sw{justify-content:center;min-height:44px}
 .go{width:100%;padding:15px}
 #out{margin-top:28px}
@@ -109,11 +120,16 @@ li a{flex-basis:100%;padding-left:40px}
 <div class="box fu" style="animation-delay:.3s">
 <textarea id="mood" placeholder="Describe a mood…"></textarea>
 <div class="chips" id="chips"></div>
+<div class="opts">
+<div class="seg" id="energy" role="radiogroup" aria-label="Energy"><button type="button" data-v="chill">Chill</button><button type="button" data-v="" class="on">Mixed</button><button type="button" data-v="hype">Hype</button></div>
+<div class="seg" id="era" role="radiogroup" aria-label="Era"><button type="button" data-v="classic">Classics</button><button type="button" data-v="" class="on">Any era</button><button type="button" data-v="recent">Recent</button></div>
+</div>
 <div class="row">
 <label class="sw"><input type="checkbox" id="opm"><span class="track"></span>OPM only 🇵🇭</label>
 <button class="go" id="go">Make playlist</button>
 </div>
 </div>
+<div class="hist" id="hist" hidden></div>
 <div id="msg"></div>
 <div id="out"></div>
 </main>
@@ -125,32 +141,50 @@ var moods=["Rainy Sunday with coffee","Late-night drive","Gym hype","Heartbreak"
 var $=function(id){return document.getElementById(id)};
 var chips=$("chips"),mood=$("mood"),opm=$("opm"),go=$("go"),out=$("out"),msg=$("msg");
 var last=null;
+var HKEY="moodtape.history",HMAX=8;
+function segVal(id){var b=$(id).querySelector(".on");return b?b.getAttribute("data-v"):""}
+function segSet(id,v){[].forEach.call($(id).children,function(b){var on=b.getAttribute("data-v")===(v||"");b.classList.toggle("on",on);b.setAttribute("aria-checked",on)})}
+["energy","era"].forEach(function(id){[].forEach.call($(id).children,function(b){b.setAttribute("role","radio");b.setAttribute("aria-checked",b.classList.contains("on"));b.onclick=function(){segSet(id,b.getAttribute("data-v"))}})});
+function hload(){try{var h=JSON.parse(localStorage.getItem(HKEY)||"[]");return Array.isArray(h)?h:[]}catch(e){return[]}}
+function hsave(h){try{localStorage.setItem(HKEY,JSON.stringify(h))}catch(e){}}
+function hadd(item){var h=hload();h.unshift(item);hsave(h.slice(0,HMAX));hdraw()}
+function hdraw(){var h=hload(),el=$("hist");el.innerHTML="";el.hidden=!h.length;if(!h.length)return;
+h.forEach(function(it){var b=document.createElement("button");b.type="button";b.className="chip";b.textContent=it.data.title||it.mood;b.title=it.mood;
+b.onclick=function(){mood.value=it.mood;opm.checked=!!it.opmOnly;segSet("energy",it.energy);segSet("era",it.era);msg.innerHTML="";
+last={mood:it.mood,opmOnly:!!it.opmOnly,energy:it.energy||"",era:it.era||""};render(it.data,!!it.opmOnly,it.mood);out.scrollIntoView({behavior:"smooth",block:"start"})};el.appendChild(b)});
+var c=document.createElement("button");c.type="button";c.className="clr";c.textContent="Clear";c.onclick=function(){hsave([]);hdraw()};el.appendChild(c)}
+var IMPORT_URL="https://www.tunemymusic.com/transfer/freetext-to-spotify";
+function copyText(txt,done){function fb(){var ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done()}catch(e){}ta.remove()}
+try{navigator.clipboard.writeText(txt).then(done,fb)}catch(e){fb()}}
 moods.forEach(function(m){var b=document.createElement("button");b.className="chip";b.type="button";b.textContent=m;
 b.onclick=function(){mood.value=m};chips.appendChild(b)});
-function prompt(m,o){
+function prompt(m,o,x){x=x||{};
 return "You are a playlist curator. Mood or moment: \""+m+"\".\n"+
 "Pick 15 real, well-known songs that fit. Do not invent songs. For each, add a short note (max 12 words) on why it fits."+
 (o?"\nIMPORTANT: Only choose songs by Filipino artists (OPM – Original Pilipino Music), from classics to current hits, in Tagalog, English, or other Philippine languages. Do not include any song by a non-Filipino artist.":"")+
+({chill:"\nEnergy: favor calm, mellow, low-energy songs.",hype:"\nEnergy: favor upbeat, high-energy songs."}[x.energy]||"")+
+({classic:"\nEra: favor classics released before 2005.",recent:"\nEra: favor songs released since 2020."}[x.era]||"")+
 "\nReply with ONLY a JSON object: {\"title\":\"short playlist name\",\"songs\":[{\"title\":\"...\",\"artist\":\"...\",\"why\":\"...\"}]}";
 }
 function parse(t){t=t.replace(/```json|```/g,"").trim();var s=t.indexOf("{"),e=t.lastIndexOf("}");return JSON.parse(t.slice(s,e+1))}
 function skeleton(){var h='<div class="sk" style="height:150px;border-radius:28px"></div>';for(var i=0;i<5;i++)h+='<div class="sk" style="height:52px"></div>';out.innerHTML=h}
-async function run(m,o){
+async function run(m,o,x){x=x||{energy:"",era:""};
 msg.innerHTML="";
 if(!m.trim()){out.innerHTML="";msg.innerHTML='<p class="err">Type a mood or tap one above.</p>';return}
 go.disabled=true;var rb=$("remix");if(rb)rb.disabled=true;
 skeleton();
 try{
-var res=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt(m,o)})});
+var res=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt(m,o,x)})});
 if(!res.ok){var er={};try{er=await res.json()}catch(x){}throw new Error("Couldn’t reach the AI. "+(er.error||"")+(er.detail?" – "+er.detail:""))}
 var data=parse((await res.json()).text);
-last={mood:m,opmOnly:o};
+last={mood:m,opmOnly:o,energy:x.energy,era:x.era};
 render(data,o,m);
+hadd({mood:m,opmOnly:o,energy:x.energy,era:x.era,data:data});
 }catch(e){out.innerHTML="";msg.innerHTML='<p class="err">'+(e&&e.message?e.message:"Couldn’t make a playlist. Try again.")+"</p>"}
 go.disabled=false;
 }
 function render(d,o,m){
-out.innerHTML='<div class="hero"><div><h2></h2></div><div class="acts"><button class="ghost" id="copy">Copy track list</button><button class="ghost" id="remix">Remix</button></div></div><ol></ol>';
+out.innerHTML='<div class="hero"><div><h2></h2></div><div class="acts"><button class="ghost" id="copy">Copy track list</button><button class="ghost" id="imp">Import to Spotify</button><button class="ghost" id="remix">Remix</button></div></div><ol></ol>';
 var h2=out.querySelector("h2");h2.appendChild(document.createTextNode(d.title||"Your playlist"));
 if(o){var tg=document.createElement("span");tg.className="tag";tg.textContent="OPM";h2.appendChild(tg)}
 var ol=out.querySelector("ol");
@@ -163,13 +197,15 @@ t.appendChild(b);t.appendChild(sp);if(s.why){var w=document.createElement("em");
 var a=document.createElement("a");a.target="_blank";a.rel="noopener";a.textContent="Play on Spotify";
 a.href="https://open.spotify.com/search/"+encodeURIComponent(s.title+" "+s.artist);
 li.appendChild(n);li.appendChild(t);li.appendChild(a);ol.appendChild(li)});
-$("remix").onclick=function(){run(last.mood,last.opmOnly)};
+$("remix").onclick=function(){run(last.mood,last.opmOnly,{energy:last.energy,era:last.era})};
 $("copy").onclick=function(){var txt=(d.songs||[]).map(function(s,i){return (i+1)+". "+s.title+" – "+s.artist}).join("\n");var c=$("copy");
-function ok(){c.textContent="Copied ✓";setTimeout(function(){c.textContent="Copy track list"},1500)}
-function fb(){var ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");ok()}catch(e){}ta.remove()}
-try{navigator.clipboard.writeText(txt).then(ok,fb)}catch(e){fb()}};
+copyText(txt,function(){c.textContent="Copied ✓";setTimeout(function(){c.textContent="Copy track list"},1500)})};
+$("imp").onclick=function(){var txt=(d.songs||[]).map(function(s){return s.artist+" - "+s.title}).join("\n");var b=$("imp");
+window.open(IMPORT_URL,"_blank","noopener");
+copyText(txt,function(){b.textContent="List copied – paste it ✓";setTimeout(function(){b.textContent="Import to Spotify"},3000)})};
 }
-go.onclick=function(){run(mood.value,opm.checked)};
+go.onclick=function(){run(mood.value,opm.checked,{energy:segVal("energy"),era:segVal("era")})};
+hdraw();
 })();
 </script>
 </body>
