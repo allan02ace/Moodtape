@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Moodtape – AI playlists for any moment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--radius:1rem;--bg:oklch(0.965 0.02 80);--fg:oklch(0.2 0.03 320);--card:oklch(0.985 0.012 80);
+--primary:oklch(0.66 0.2 40);--primary-fg:oklch(0.99 0.01 80);--secondary:oklch(0.9 0.04 300);
+--muted:oklch(0.92 0.02 80);--muted-fg:oklch(0.47 0.03 320);--accent:oklch(0.88 0.08 300);--border:oklch(0.86 0.025 70);--err:oklch(0.577 0.245 27)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:oklch(0.16 0.025 310);--fg:oklch(0.95 0.015 80);--card:oklch(0.21 0.03 310);
+--primary:oklch(0.72 0.19 45);--primary-fg:oklch(0.18 0.03 310);--secondary:oklch(0.3 0.06 300);--muted:oklch(0.26 0.03 310);
+--muted-fg:oklch(0.72 0.03 300);--accent:oklch(0.34 0.09 300);--border:oklch(1 0 0 / 12%);--err:oklch(0.704 0.191 22)}}
+:root[data-theme="dark"]{--bg:oklch(0.16 0.025 310);--fg:oklch(0.95 0.015 80);--card:oklch(0.21 0.03 310);--primary:oklch(0.72 0.19 45);
+--primary-fg:oklch(0.18 0.03 310);--secondary:oklch(0.3 0.06 300);--muted:oklch(0.26 0.03 310);--muted-fg:oklch(0.72 0.03 300);
+--accent:oklch(0.34 0.09 300);--border:oklch(1 0 0 / 12%);--err:oklch(0.704 0.191 22)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;line-height:1.5;position:relative;overflow-x:hidden;min-height:100vh}
+.glow{position:absolute;border-radius:50%;filter:blur(120px);pointer-events:none}
+.g1{top:-160px;left:-130px;width:520px;height:520px;background:var(--primary);opacity:.25}
+.g2{top:80px;right:-160px;width:480px;height:480px;background:var(--accent);opacity:.55}
+.wrap{position:relative;max-width:768px;margin:0 auto;padding:0 20px}
+header{padding:22px 0;font-weight:800;font-size:1.25rem;letter-spacing:-.02em}
+header span{color:var(--primary)}
+main{padding:40px 0 30px}
+@keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.fu{opacity:0;animation:up .6s ease-out forwards}
+.eyebrow{font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.25em;color:var(--primary);margin:0}
+h1{font-size:clamp(2.8rem,9vw,4.5rem);font-weight:800;line-height:.95;letter-spacing:-.03em;margin:12px 0 0;text-wrap:balance}
+h1 em{font-family:"Instrument Serif",ui-serif,Georgia,serif;font-weight:400;font-style:italic;color:var(--primary)}
+.lead{max-width:36rem;font-size:1.15rem;color:var(--muted-fg);margin:20px 0 0}
+.box{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius)*1.5);padding:18px;margin-top:32px}
+textarea{width:100%;min-height:84px;resize:vertical;border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;background:transparent;color:var(--fg);font:inherit}
+textarea:focus{outline:2px solid var(--primary);outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chip{border:0;background:var(--secondary);color:var(--fg);padding:7px 14px;border-radius:999px;font:inherit;font-size:.9rem;font-weight:600;cursor:pointer}
+.chip:hover{outline:2px solid var(--primary)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sw{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-weight:600;font-size:.95rem}
+.sw input{position:absolute;opacity:0}
+.track{width:42px;height:24px;border-radius:999px;background:var(--border);position:relative;transition:background .15s}
+.track::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw input:checked+.track{background:var(--primary)}
+.sw input:checked+.track::after{transform:translateX(18px)}
+.sw input:focus-visible+.track{outline:2px solid var(--primary);outline-offset:2px}
+.go{background:var(--primary);color:var(--primary-fg);border:0;border-radius:var(--radius);padding:12px 22px;font:inherit;font-weight:800;cursor:pointer}
+.go:disabled{opacity:.6;cursor:wait}
+.ghost{background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 16px;font:inherit;font-weight:600;cursor:pointer}
+.ghost:disabled{opacity:.6;cursor:wait}
+#out{margin-top:40px}
+.hero{background:linear-gradient(135deg,var(--primary),oklch(0.55 0.2 300));color:#fff;border-radius:calc(var(--radius)*1.75);padding:28px;display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.hero small{text-transform:uppercase;letter-spacing:.2em;font-weight:600;opacity:.85}
+.hero h2{margin:6px 0 0;font-size:clamp(1.6rem,5vw,2.4rem);line-height:1.05;letter-spacing:-.02em}
+.hero .ghost{color:#fff;border-color:rgb(255 255 255 / .5)}
+.tag{font-size:.7rem;background:rgb(255 255 255 / .22);padding:2px 9px;border-radius:999px;margin-left:8px;vertical-align:middle;letter-spacing:.05em}
+ol{list-style:none;margin:10px 0 0;padding:0}
+li{display:flex;align-items:center;gap:14px;padding:13px 6px;border-bottom:1px solid var(--border)}
+.n{width:26px;color:var(--muted-fg);text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.t{flex:1;min-width:0}.t b{display:block;overflow-wrap:anywhere}.t span{color:var(--muted-fg);font-size:.9rem}
+li a{color:var(--primary);text-decoration:none;font-weight:600;font-size:.9rem;white-space:nowrap}
+li a:hover{text-decoration:underline}
+.why{display:block;font-style:normal;color:var(--muted-fg);font-size:.85rem;margin-top:2px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.sk{background:var(--muted);border-radius:var(--radius);margin-bottom:12px;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.5}}
+.err{color:var(--err);font-weight:600;margin-top:16px}
+footer{padding:30px 0 40px;color:var(--muted-fg);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="glow g1"></div><div class="glow g2"></div>
+<div class="wrap">
+<header>Mood<span>tape</span></header>
+<main>
+<p class="eyebrow fu">A mixtape for every moment</p>
+<h1 class="fu" style="animation-delay:.1s">Tell us the vibe. <em>We’ll press play.</em></h1>
+<p class="lead fu" style="animation-delay:.2s">Describe a mood, a memory, or a moment. Get 15 hand-picked songs you can play straight away on Spotify.</p>
+<div class="box fu" style="animation-delay:.3s">
+<textarea id="mood" placeholder="e.g. rainy Sunday, missing home, gym hype…"></textarea>
+<div class="chips" id="chips"></div>
+<div class="row">
+<label class="sw"><input type="checkbox" id="opm"><span class="track"></span>OPM only 🇵🇭</label>
+<button class="go" id="go">Make playlist</button>
+</div>
+</div>
+<div id="msg"></div>
+<div id="out"></div>
+</main>
+<footer>Songs are AI suggestions. Check each one on Spotify.</footer>
+</div>
+<script>
+(function(){
+var WORKER_URL="https://moodtape-ai.allanacem.workers.dev";
+var moods=["Rainy Sunday with coffee","Late-night drive","Gym hype","Heartbreak","Focus","Throwback","Road trip","Romantic"];
+var $=function(id){return document.getElementById(id)};
+var chips=$("chips"),mood=$("mood"),opm=$("opm"),go=$("go"),out=$("out"),msg=$("msg");
+var last=null;
+moods.forEach(function(m){var b=document.createElement("button");b.className="chip";b.type="button";b.textContent=m;
+b.onclick=function(){mood.value=m};chips.appendChild(b)});
+function prompt(m,o){
+return "You are a playlist curator. Mood or moment: \""+m+"\".\n"+
+"Pick 15 real, well-known songs that fit. Do not invent songs. For each, add a short note (max 12 words) on why it fits."+
+(o?"\nIMPORTANT: Only choose songs by Filipino artists (OPM – Original Pilipino Music), from classics to current hits, in Tagalog, English, or other Philippine languages. Do not include any song by a non-Filipino artist.":"")+
+"\nReply with ONLY a JSON object: {\"title\":\"short playlist name\",\"songs\":[{\"title\":\"...\",\"artist\":\"...\",\"why\":\"...\"}]}";
+}
+function parse(t){t=t.replace(/```json|```/g,"").trim();var s=t.indexOf("{"),e=t.lastIndexOf("}");return JSON.parse(t.slice(s,e+1))}
+function skeleton(){var h='<div class="sk" style="height:150px;border-radius:28px"></div>';for(var i=0;i<5;i++)h+='<div class="sk" style="height:52px"></div>';out.innerHTML=h}
+async function run(m,o){
+msg.innerHTML="";
+if(!m.trim()){out.innerHTML="";msg.innerHTML='<p class="err">Type a mood or tap one above.</p>';return}
+go.disabled=true;var rb=$("remix");if(rb)rb.disabled=true;
+skeleton();
+try{
+var res=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt(m,o)})});
+if(!res.ok){throw new Error("Couldn’t reach the AI. Try again in a moment.")}
+var data=parse((await res.json()).text);
+last={mood:m,opmOnly:o};
+render(data,o,m);
+}catch(e){out.innerHTML="";msg.innerHTML='<p class="err">'+(e&&e.message?e.message:"Couldn’t make a playlist. Try again.")+"</p>"}
+go.disabled=false;
+}
+function render(d,o,m){
+out.innerHTML='<div class="hero"><div><small></small><h2></h2></div><div class="acts"><button class="ghost" id="copy">Copy track list</button><button class="ghost" id="remix">Remix</button></div></div><ol></ol>';
+out.querySelector("small").textContent=m;
+var h2=out.querySelector("h2");h2.appendChild(document.createTextNode(d.title||"Your playlist"));
+if(o){var tg=document.createElement("span");tg.className="tag";tg.textContent="OPM";h2.appendChild(tg)}
+var ol=out.querySelector("ol");
+(d.songs||[]).forEach(function(s,i){
+var li=document.createElement("li");
+var n=document.createElement("div");n.className="n";n.textContent=i+1;
+var t=document.createElement("div");t.className="t";
+var b=document.createElement("b");b.textContent=s.title;var sp=document.createElement("span");sp.textContent=s.artist;
+t.appendChild(b);t.appendChild(sp);if(s.why){var w=document.createElement("em");w.className="why";w.textContent=s.why;t.appendChild(w)}
+var a=document.createElement("a");a.target="_blank";a.rel="noopener";a.textContent="Play on Spotify";
+a.href="https://open.spotify.com/search/"+encodeURIComponent(s.title+" "+s.artist);
+li.appendChild(n);li.appendChild(t);li.appendChild(a);ol.appendChild(li)});
+$("remix").onclick=function(){run(last.mood,last.opmOnly)};
+$("copy").onclick=function(){var txt=(d.songs||[]).map(function(s,i){return (i+1)+". "+s.title+" – "+s.artist}).join("\n");var c=$("copy");
+function ok(){c.textContent="Copied ✓";setTimeout(function(){c.textContent="Copy track list"},1500)}
+function fb(){var ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");ok()}catch(e){}ta.remove()}
+try{navigator.clipboard.writeText(txt).then(ok,fb)}catch(e){fb()}};
+}
+go.onclick=function(){run(mood.value,opm.checked)};
+})();
+</script>
+</body>
+</html>
