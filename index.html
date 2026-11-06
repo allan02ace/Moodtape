@@ -3,6 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f9d3ba" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1022" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Moodtape">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Moodtape – AI playlists for any moment</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,9 +35,10 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:"Bricolage Grotes
 .g1{top:-160px;left:-130px;width:520px;height:520px;background:var(--primary);opacity:.25}
 .g2{top:80px;right:-160px;width:480px;height:480px;background:var(--accent);opacity:.55}
 .wrap{position:relative;max-width:768px;margin:0 auto;padding:0 20px}
-header{padding:22px 0;font-weight:800;font-size:1.25rem;letter-spacing:-.02em}
+header{display:flex;align-items:center;gap:10px;padding:16px 0 0;font-weight:800;font-size:1.25rem;letter-spacing:-.02em}
+header img{width:36px;height:36px;display:block}
 header span{color:var(--primary)}
-main{padding:40px 0 30px}
+main{padding:14px 0 40px}
 @keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 .fu{opacity:0;animation:up .6s ease-out forwards}
 h1{font-size:clamp(2.8rem,9vw,4.5rem);font-weight:800;line-height:.95;letter-spacing:-.03em;margin:12px 0 0;text-wrap:balance}
@@ -67,12 +78,31 @@ li a:hover{text-decoration:underline}
 .sk{background:var(--muted);border-radius:var(--radius);margin-bottom:12px;animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.5}}
 .err{color:var(--err);font-weight:600;margin-top:16px}
+html{-webkit-text-size-adjust:100%}
+button,.chip,.sw{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+textarea{font-size:16px}
+@media (max-width:560px){
+.wrap{padding:0 16px}
+h1{font-size:clamp(2.4rem,13vw,3.2rem)}
+.lead{font-size:1.05rem;margin-top:14px}
+.box{padding:14px;margin-top:22px}
+.chip{padding:9px 14px}
+.row{flex-direction:column;align-items:stretch;gap:14px}
+.sw{justify-content:center;min-height:44px}
+.go{width:100%;padding:15px}
+#out{margin-top:28px}
+.hero{padding:20px}
+.acts{width:100%}.acts .ghost{flex:1;padding:11px 10px}
+li{flex-wrap:wrap;row-gap:4px}
+li a{flex-basis:100%;padding-left:40px}
+}
+@media (prefers-reduced-motion:reduce){.fu,.sk{animation:none;opacity:1}}
 </style>
 </head>
 <body>
 <div class="glow g1"></div><div class="glow g2"></div>
 <div class="wrap">
-<header>Mood<span>tape</span></header>
+<header><img src="icon.svg" alt="" width="36" height="36"><div>Mood<span>tape</span></div></header>
 <main>
 <h1 class="fu" style="animation-delay:.1s">Tell us the vibe. <em>We’ll press play.</em></h1>
 <p class="lead fu" style="animation-delay:.2s">Describe a mood. Get a playlist.</p>
